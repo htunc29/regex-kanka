@@ -4,16 +4,15 @@ import { useState } from "react";
 import RegexInput from "@/components/RegexInput";
 import MatchHighlighter from "@/components/MatchHighlighter";
 import ExplanationBox from "@/components/ExplanationBox";
-import { RegexAciklama } from "@/lib/gemini";
+import { RegexResponse } from "@/lib/gemini";
 
 export default function Home() {
   const [regex, setRegex] = useState("");
   const [testString, setTestString] = useState("");
-  const [result, setResult] = useState<RegexAciklama | null>(null);
+  const [result, setResult] = useState<RegexResponse | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Manuel açıklama fonksiyonu
   const handleExplain = async () => {
     if (!regex) {
       setError("Önce bir regex pattern yaz kanka!");
@@ -44,7 +43,6 @@ export default function Home() {
     }
   };
 
-  // Rastgele örnek
   const randomExamples = [
     {
       regex: "^\\d{4}$",
@@ -71,7 +69,6 @@ export default function Home() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-900 via-black to-gray-900">
-      {/* Header */}
       <header className="border-b border-gray-800 bg-black/50 backdrop-blur-sm">
         <div className="max-w-6xl mx-auto px-6 py-6">
           <h1 className="text-3xl font-bold text-white flex items-center gap-3">
@@ -87,10 +84,8 @@ export default function Home() {
         </div>
       </header>
 
-      {/* Main */}
       <main className="max-w-6xl mx-auto px-6 py-12">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-          {/* Sol Panel - Input */}
           <div className="space-y-6">
             <div className="bg-gray-900/50 rounded-xl p-6 border border-gray-800">
               <RegexInput
@@ -138,7 +133,6 @@ export default function Home() {
               </div>
             </div>
 
-            {/* Match Highlighter */}
             {testString && (
               <div className="bg-gray-900/50 rounded-xl p-6 border border-gray-800">
                 <h3 className="text-sm font-semibold text-gray-400 mb-3">
@@ -152,13 +146,11 @@ export default function Home() {
             )}
           </div>
 
-          {/* Sağ Panel - Açıklama */}
           <div>
             <ExplanationBox data={result} loading={loading} error={error} />
           </div>
         </div>
 
-        {/* Footer Note */}
         <div className="mt-12 text-center text-gray-600 text-sm">
           <p>
             Made with ❤️ using{" "}

@@ -1,59 +1,121 @@
-import { GoogleGenerativeAI } from "@google/generative-ai";
+import { GoogleGenerativeAI, SchemaType } from "@google/generative-ai";
 
-const PROMPT = `
-Sen bir regex koçusun. Kısa, net ve samimi açıklama yap.
-
-KURALLAR:
-- Açıklamayı markdown ile yaz: \`kod\` için backtick, **önemli** için bold
-- 2-3 cümle max, her karakteri tek tek açıklama!
-- "Eyvallah kanka" gibi gereksiz girişler yapma
-- Samimi ama profesyonel ol
-
-Regex: {{REGEX}}
-Test String: {{TEST_STRING}}
-
-SADECE JSON döndür:
-{
-  "aciklama": "Kısa markdown açıklama. Örnek: Bu regex \`^\\d{4}$\` ile **tam 4 haneli sayı** arıyor.",
-  "matchler": ["eşleşen parçalar"],
-  "hata": "Varsa hata (yoksa null)",
-  "alternatif": "Daha iyi regex varsa (yoksa null)",
-  "ornek_kullanim": "1 cümle örnek"
+export interface RegexMatch {
+  match: string;
+  index: number;
+  groups?: string[];
 }
-`;
 
-export interface RegexAciklama {
+export interface RegexResponse {
+  isValid: boolean;
   aciklama: string;
+  detaylar: string[];
   matchler: string[];
   hata: string | null;
   alternatif: string | null;
   ornek_kullanim: string;
 }
 
+const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || "");
+
+const schema = {
+  description: "Regex analiz sonucu",
+  type: SchemaType.OBJECT as const,
+  properties: {
+    isValid: {
+      type: SchemaType.BOOLEAN as const,
+      description: "Regex sözdizimi geçerli mi?",
+    },
+    aciklama: {
+      type: SchemaType.STRING as const,
+      description: "Regex'in ne yaptığının kısa özeti",
+    },
+    detaylar: {
+      type: SchemaType.ARRAY as const,
+      items: { type: SchemaType.STRING as const },
+      description:
+        "Regex parçalarının teknik açıklaması (örn: '\\d+' -> Bir veya daha fazla rakam)",
+    },
+    matchler: {
+      type: SchemaType.ARRAY as const,
+      items: { type: SchemaType.STRING as const },
+      description: "Test stringi içindeki tam eşleşmeler",
+    },
+    hata: {
+      type: SchemaType.STRING as const,
+      nullable: true,
+      description: "Varsa hata mesajı",
+    },
+    alternatif: {
+      type: SchemaType.STRING as const,
+      nullable: true,
+      description: "Daha iyi/kısa bir regex önerisi",
+    },
+    ornek_kullanim: {
+      type: SchemaType.STRING as const,
+      description: "JavaScript/Python kullanım örneği",
+    },
+  },
+  required: ["isValid", "aciklama", "detaylar", "matchler", "ornek_kullanim"],
+};
+
+const SYSTEM_PROMPT = `
+Sen bir Regex (Düzenli İfade) Ayrıştırma ve Optimizasyon Motorusun.
+Görevin: Kullanıcının verdiği Regex ifadesini analiz etmek, hataları bulmak ve çalışma mantığını açıklamaktır.
+
+Kurallar:
+1.  **Analitik Ol:** "Bu bir mail regexi" deyip geçme. Token token analiz et. (Örn: "[a-z]+" -> Küçük harflerden oluşan kelime).
+2.  **Doğruluk:** Verilen 'Test String' üzerinde regex motoru gibi davran ve SADECE gerçek eşleşmeleri listele.
+3.  **Optimizasyon:** Eğer regex çok karmaşıksa veya modern standartlara (ES6+) uymuyorsa, daha kısa ve performanslı bir 'alternatif' öner.
+4.  **Dil:** Yanıtların Türkçe, teknik terimler (Wildcard, Anchor, Quantifier vb.) orijinal İngilizce halleriyle parantez içinde belirtilmeli.
+5.  **Format:** Asla markdown bloğu (\`\`\`json) kullanma, direkt ham JSON döndür.
+`;
+
+const model = genAI.getGenerativeModel({
+  model: process.env.GEMINI_MODEL || "gemini-2.5-flash",
+  generationConfig: {
+    responseMimeType: "application/json",
+    responseSchema: schema,
+    temperature: 0.2,
+  },
+  systemInstruction: SYSTEM_PROMPT,
+});
+
 export async function regexAcikla(
   regex: string,
-  test: string
-): Promise<RegexAciklama> {
-  const apiKey = process.env.GEMINI_API_KEY;
-  if (!apiKey) {
-    throw new Error("GEMINI_API_KEY bulunamadı!");
+  testString: string
+): Promise<RegexResponse> {
+  if (!regex.trim()) return createErrorResponse("Regex ifadesi boş olamaz.");
+
+  try {
+    const userPrompt = `
+    Lütfen aşağıdaki Regex ifadesini ve Test metnini analiz et:
+
+    Regex İfadesi: """${regex}"""
+    Test Metni: """${testString || ""}"""
+    `;
+
+    const result = await model.generateContent(userPrompt);
+    const responseText = result.response.text();
+
+    return JSON.parse(responseText) as RegexResponse;
+  } catch (error) {
+    console.error("AI Hatası:", error);
+    const errorMsg = error instanceof Error ? error.message : "Bilinmeyen hata";
+    return createErrorResponse(
+      `Gemini API hatası: ${errorMsg}. API anahtarınızı kontrol edin.`
+    );
   }
+}
 
-  const genAI = new GoogleGenerativeAI(apiKey);
-  const model = genAI.getGenerativeModel({ model: process.env.GEMINI_MODEL });
-
-  const prompt = PROMPT.replace("{{REGEX}}", regex).replace(
-    "{{TEST_STRING}}",
-    test
-  );
-
-  const result = await model.generateContent(prompt);
-  const text = result.response.text();
-
-  const jsonMatch = text.match(/\{[\s\S]*\}/);
-  if (!jsonMatch) {
-    throw new Error("AI'dan geçerli JSON yanıtı alınamadı");
-  }
-
-  return JSON.parse(jsonMatch[0]);
+function createErrorResponse(msg: string): RegexResponse {
+  return {
+    isValid: false,
+    aciklama: "İşlem başarısız.",
+    detaylar: [],
+    matchler: [],
+    hata: msg,
+    alternatif: null,
+    ornek_kullanim: "",
+  };
 }

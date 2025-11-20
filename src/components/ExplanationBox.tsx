@@ -1,10 +1,10 @@
 "use client";
 
-import { RegexAciklama } from "@/lib/gemini";
+import { RegexResponse } from "@/lib/gemini";
 import ReactMarkdown from "react-markdown";
 
 interface ExplanationBoxProps {
-  data: RegexAciklama | null;
+  data: RegexResponse | null;
   loading: boolean;
   error: string | null;
 }
@@ -48,7 +48,15 @@ export default function ExplanationBox({
 
   return (
     <div className="bg-gray-800 rounded-lg p-6 border border-gray-700 space-y-4">
-      {/* Açıklama */}
+      {!data.isValid && (
+        <div className="bg-red-900/20 rounded-lg p-3 border border-red-800">
+          <div className="flex items-center gap-2 text-red-400">
+            <span className="text-xl">❌</span>
+            <span className="font-semibold">Geçersiz Regex</span>
+          </div>
+        </div>
+      )}
+
       <div>
         <h3 className="text-sm font-semibold text-blue-400 mb-2">
           📖 Ne Yapıyor?
@@ -74,7 +82,22 @@ export default function ExplanationBox({
         </div>
       </div>
 
-      {/* Match'ler */}
+      {data.detaylar && data.detaylar.length > 0 && (
+        <div>
+          <h3 className="text-sm font-semibold text-indigo-400 mb-2">
+            🔍 Detaylı Analiz
+          </h3>
+          <ul className="space-y-1 text-sm text-gray-300">
+            {data.detaylar.map((detay, i) => (
+              <li key={i} className="flex items-start gap-2">
+                <span className="text-indigo-400 mt-1">•</span>
+                <span>{detay}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+
       {data.matchler.length > 0 && (
         <div>
           <h3 className="text-sm font-semibold text-green-400 mb-2">
@@ -93,7 +116,6 @@ export default function ExplanationBox({
         </div>
       )}
 
-      {/* Hata */}
       {data.hata && (
         <div>
           <h3 className="text-sm font-semibold text-yellow-400 mb-2">
@@ -105,7 +127,6 @@ export default function ExplanationBox({
         </div>
       )}
 
-      {/* Alternatif */}
       {data.alternatif && (
         <div>
           <h3 className="text-sm font-semibold text-purple-400 mb-2">
@@ -117,7 +138,6 @@ export default function ExplanationBox({
         </div>
       )}
 
-      {/* Örnek Kullanım */}
       <div>
         <h3 className="text-sm font-semibold text-cyan-400 mb-2">
           🎯 Ne İşe Yarar?

@@ -1,5 +1,7 @@
 # 🔍 Regex Playground with Gemini AI
 
+![Regex Playground Screenshot](image.png)
+
 ## 📖 Proje Hakkında
 
 Bu web uygulaması, **regex (düzenli ifadeler)** öğrenme ve anlama konusunda zorluk çekenler için geliştirilmiş interaktif bir eğitim platformudur. Gemini AI desteği ile regex pattern'lerinizi anlık olarak analiz eder, Türkçe açıklamalar sunar ve alternatif çözümler önerir.
