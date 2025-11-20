@@ -17,7 +17,7 @@ Regular Expression (Regex), yazılım geliştirmede güçlü bir araçtır ancak
 
 Bu proje tamamen **frontend tabanlı** olup, herhangi bir backend veritabanına ihtiyaç duymaz:
 
-- **Framework**: [Next.js 15](https://nextjs.org/) (App Router)
+- **Framework**: [Next.js 16.0.3](https://nextjs.org/) (App Router)
 - **UI Library**: React 19 + TypeScript
 - **Styling**: Tailwind CSS 4
 - **AI Engine**: [Google Gemini 2.5 Flash](https://ai.google.dev/) (Ücretsiz API)
