@@ -1,63 +1,170 @@
-import Image from "next/image";
+"use client";
+
+import { useState } from "react";
+import RegexInput from "@/components/RegexInput";
+import MatchHighlighter from "@/components/MatchHighlighter";
+import ExplanationBox from "@/components/ExplanationBox";
+import { RegexAciklama } from "@/lib/gemini";
 
 export default function Home() {
+  const [regex, setRegex] = useState("");
+  const [testString, setTestString] = useState("");
+  const [result, setResult] = useState<RegexAciklama | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  // Manuel açıklama fonksiyonu
+  const handleExplain = async () => {
+    if (!regex) {
+      setError("Önce bir regex pattern yaz kanka!");
+      return;
+    }
+
+    setLoading(true);
+    setError(null);
+
+    try {
+      const res = await fetch("/api/gemini", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ regex, test: testString }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        throw new Error(data.error || "Bir hata oluştu");
+      }
+
+      setResult(data);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Bilinmeyen hata");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Rastgele örnek
+  const randomExamples = [
+    {
+      regex: "^\\d{4}$",
+      test: "2025 yılında doğdum, 1234 şifrem",
+      desc: "Tam 4 haneli sayı",
+    },
+    {
+      regex: "[a-z]+@[a-z]+\\.[a-z]+",
+      test: "Mail: test@gmail.com veya info@site.org",
+      desc: "Basit email adresi",
+    },
+    {
+      regex: "\\b[A-Z][a-z]+",
+      test: "Merhaba Dünya! JavaScript öğreniyorum",
+      desc: "Büyük harfle başlayan kelimeler",
+    },
+  ];
+
+  const loadRandomExample = () => {
+    const example = randomExamples[Math.floor(Math.random() * randomExamples.length)];
+    setRegex(example.regex);
+    setTestString(example.test);
+  };
+
   return (
-    <div className="flex min-h-screen items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex min-h-screen w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
+    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-black to-gray-900">
+      {/* Header */}
+      <header className="border-b border-gray-800 bg-black/50 backdrop-blur-sm">
+        <div className="max-w-6xl mx-auto px-6 py-6">
+          <h1 className="text-3xl font-bold text-white flex items-center gap-3">
+            <span className="text-4xl">🔍</span>
+            Regex Playground
+            <span className="text-sm font-normal text-gray-500 ml-2">
+              by Gemini AI
+            </span>
           </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
+          <p className="text-gray-400 mt-2">
+            Regex mi? Kanka sana AI abin açıklasın! 🚀
           </p>
         </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
+      </header>
+
+      {/* Main */}
+      <main className="max-w-6xl mx-auto px-6 py-12">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+          {/* Sol Panel - Input */}
+          <div className="space-y-6">
+            <div className="bg-gray-900/50 rounded-xl p-6 border border-gray-800">
+              <RegexInput
+                value={regex}
+                onChange={setRegex}
+                label="Regex Pattern"
+                placeholder="Örn: ^\d{4}$"
+              />
+
+              <div className="mt-6">
+                <RegexInput
+                  value={testString}
+                  onChange={setTestString}
+                  label="Test String"
+                  placeholder="Buraya test edilecek metin..."
+                  mono={false}
+                />
+              </div>
+
+              <div className="mt-6 flex gap-3">
+                <button
+                  onClick={handleExplain}
+                  disabled={loading || !regex}
+                  className="flex-1 py-3 bg-green-600 hover:bg-green-700 disabled:bg-gray-700
+                    disabled:cursor-not-allowed text-white rounded-lg font-medium
+                    transition-colors flex items-center justify-center gap-2"
+                >
+                  {loading ? (
+                    <>
+                      <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                      Düşünüyor...
+                    </>
+                  ) : (
+                    <>🚀 Açıkla!</>
+                  )}
+                </button>
+
+                <button
+                  onClick={loadRandomExample}
+                  className="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white
+                    rounded-lg font-medium transition-colors"
+                >
+                  🎲
+                </button>
+              </div>
+            </div>
+
+            {/* Match Highlighter */}
+            {testString && (
+              <div className="bg-gray-900/50 rounded-xl p-6 border border-gray-800">
+                <h3 className="text-sm font-semibold text-gray-400 mb-3">
+                  🎯 Match Preview
+                </h3>
+                <MatchHighlighter
+                  text={testString}
+                  matches={result?.matchler || []}
+                />
+              </div>
+            )}
+          </div>
+
+          {/* Sağ Panel - Açıklama */}
+          <div>
+            <ExplanationBox data={result} loading={loading} error={error} />
+          </div>
+        </div>
+
+        {/* Footer Note */}
+        <div className="mt-12 text-center text-gray-600 text-sm">
+          <p>
+            Made with ❤️ using{" "}
+            <span className="text-blue-400">Next.js</span> +{" "}
+            <span className="text-purple-400">Gemini 1.5 Flash</span>
+          </p>
         </div>
       </main>
     </div>
