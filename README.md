@@ -198,7 +198,7 @@ Her yazılımcı hayatında en az bir kez regex ile boğuşmuştur. Regex öğre
 
 ## 📞 İletişim ve Destek
 
-- **Issues**: [GitHub Issues](https://github.com/your-username/regex-playground/issues)
+- **Issues**: [GitHub Issues](https://github.com/htunc29/regex-kanka/issues)
 - **Discussions**: Sorularınızı GitHub Discussions'da sorun
 - **Sponsor**: Bu projeyi faydalı bulduysan ⭐ vermeyi unutma!
 
